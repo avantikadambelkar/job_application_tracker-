@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Kanban Board • Job Application Tracker{% endblock %}
+
+{% block content %}
+<!-- Kanban Board Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-kanban-fill text-primary"></i> Application Pipeline Board
+        </h2>
+        <p class="text-muted small mb-0">Drag and drop cards across stages or use quick-move buttons to update application statuses in real-time.</p>
+    </div>
+
+    <!-- Quick filter & actions -->
+    <div class="d-flex align-items-center gap-2">
+        <form method="get" action="{% url 'tracker:kanban' %}" class="d-flex align-items-center gap-2">
+            <div class="input-group input-group-sm" style="max-width: 260px;">
+                <span class="input-group-text bg-transparent text-muted" style="border-color: var(--border-color);">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" class="form-control" placeholder="Filter board..." value="{{ query }}">
+                {% if query %}
+                    <a href="{% url 'tracker:kanban' %}" class="btn btn-outline-glass btn-sm text-danger" title="Clear filter">
+                        <i class="bi bi-x"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+
+        <button type="button" class="btn btn-primary-gradient btn-sm" data-bs-toggle="modal" data-bs-target="#quickAddModal">
+            <i class="bi bi-plus-lg"></i> Add Job
+        </button>
+    </div>
+</div>
+
+<!-- Kanban Columns Container -->
+<div class="kanban-board">
+    {% for col in columns %}
+        <div class="kanban-column" data-column-status="{{ col.status }}">
+            <!-- Column Header -->
+            <div class="kanban-column-header">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge-status {{ col.badge }} p-1 px-2">
+                        <i class="bi {{ col.icon }}"></i>
+                    </span>
+                    <span class="fw-bold fs-6 text-white">{{ col.label }}</span>
+                </div>
+                <span class="badge bg-dark border border-secondary text-light column-count-badge">
+                    {{ col.items|length }}
+                </span>
+            </div>
+
+            <!-- Column Body / Drop zone -->
+            <div class="kanban-column-body" data-status="{{ col.status }}">
+                {% for item in col.items %}
+                    <div class="kanban-card" draggable="true" data-id="{{ item.pk }}" data-current-status="{{ col.status }}">
+                        <div class="d-flex align-items-start justify-content-between mb-2">
+                            <span class="priority-indicator {{ item.priority_badge_class }}">
+                                {{ item.get_priority_display }}
+                            </span>
+                            <div class="dropdown">
+                                <button class="btn btn-link text-muted p-0 border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end glass-card p-1 shadow">
+                                    <li><a class="dropdown-item py-1 small rounded text-white" href="{% url 'tracker:application_detail' pk=item.pk %}"><i class="bi bi-eye me-2"></i>View Dossier</a></li>
+                                    <li><a class="dropdown-item py-1 small rounded text-white" href="{% url 'tracker:application_update' pk=item.pk %}"><i class="bi bi-pencil me-2"></i>Edit Details</a></li>
+                                    <li><hr class="dropdown-divider my-1 border-secondary opacity-25"></li>
+                                    <li><a class="dropdown-item py-1 small rounded text-danger" href="{% url 'tracker:application_delete' pk=item.pk %}"><i class="bi bi-trash3 me-2"></i>Delete</a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Role & Company -->
+                        <h6 class="fw-bold mb-1">
+                            <a href="{% url 'tracker:application_detail' pk=item.pk %}" class="text-white text-decoration-none">
+                                {{ item.job_title }}
+                            </a>
+                        </h6>
+                        <div class="text-muted small mb-2 d-flex align-items-center gap-1">
+                            <i class="bi bi-building"></i>
+                            <span class="text-light fw-medium">{{ item.company_name }}</span>
+                            <span>•</span>
+                            <span>{{ item.location|default:"Remote" }}</span>
+                        </div>
+
+                        {% if item.salary_range %}
+                            <div class="small fw-semibold text-success mb-2">
+                                <i class="bi bi-cash-stack"></i> {{ item.salary_range }}
+                            </div>
+                        {% endif %}
+
+                        <!-- Tags -->
+                        {% if item.tag_list %}
+                            <div class="mb-2">
+                                {% for tag in item.tag_list|slice:":3" %}
+                                    <span class="tag-badge">{{ tag }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Card Footer -->
+                        <div class="pt-2 border-top border-secondary border-opacity-10 d-flex align-items-center justify-content-between text-muted" style="font-size: 0.75rem;">
+                            <span>
+                                <i class="bi bi-clock-history"></i> {{ item.days_since_applied }}d
+                            </span>
+                            
+                            <!-- Quick Move Dropdown -->
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-glass py-0 px-2 text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Move Stage">
+                                    Move <i class="bi bi-chevron-down" style="font-size: 0.65rem;"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end glass-card p-1 shadow">
+                                    {% for code, label in status_choices %}
+                                        {% if code != col.status %}
+                                            <li>
+                                                <a class="dropdown-item py-1 small rounded text-white" href="{% url 'tracker:quick_status_update' pk=item.pk %}?status={{ code }}&next={% url 'tracker:kanban' %}">
+                                                    Move to {{ label }}
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="text-center py-4 text-muted small opacity-50">
+                        <i class="bi bi-inbox fs-4 d-block mb-1"></i>
+                        No applications here
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ application.job_title }} at {{ application.company_name }} • Details{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{% url 'tracker:dashboard' %}" class="btn btn-outline-glass btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+<!-- Header Card -->
+<div class="glass-card p-4 mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="company-logo-avatar" style="width: 58px; height: 58px; font-size: 1.5rem;">
+                {{ application.company_name|slice:":1"|upper }}
+            </div>
+            <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                    <h3 class="mb-0 fw-bold">{{ application.job_title }}</h3>
+                    <span class="priority-indicator {{ application.priority_badge_class }}">
+                        {{ application.get_priority_display }} Priority
+                    </span>
+                </div>
+                <div class="d-flex align-items-center gap-2 text-muted small flex-wrap">
+                    <span class="text-light fw-medium fs-6">{{ application.company_name }}</span>
+                    <span>•</span>
+                    <span><i class="bi bi-geo-alt"></i> {{ application.location|default:"Remote" }}</span>
+                    <span>•</span>
+                    <span><i class="bi bi-clock"></i> Applied {{ application.application_date|date:"F d, Y" }} ({{ application.days_since_applied }} days ago)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status & Actions -->
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="dropdown">
+                <button class="btn badge-status {{ application.status_badge_class }} dropdown-toggle px-3 py-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi {{ application.status_icon }}"></i>
+                    <span>{{ application.get_status_display }}</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end glass-card p-2 shadow">
+                    {% for code, label in status_choices %}
+                        <li>
+                            <a class="dropdown-item rounded py-1 small text-white" href="{% url 'tracker:quick_status_update' pk=application.pk %}?status={{ code }}">
+                                {{ label }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            {% if application.job_url %}
+                <a href="{{ application.job_url }}" target="_blank" rel="noopener" class="btn btn-outline-glass" title="Open Job URL">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+            {% endif %}
+
+            <a href="{% url 'tracker:application_update' pk=application.pk %}" class="btn btn-outline-glass">
+                <i class="bi bi-pencil"></i> Edit
+            </a>
+
+            <a href="{% url 'tracker:application_delete' pk=application.pk %}" class="btn btn-outline-glass text-danger">
+                <i class="bi bi-trash3"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Key Highlights Row -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="glass-card p-3">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Workplace Type</div>
+            <div class="fw-bold fs-6 text-light d-flex align-items-center gap-2">
+                <i class="bi bi-building text-primary"></i> {{ application.get_work_location_type_display }}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="glass-card p-3">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Compensation</div>
+            <div class="fw-bold fs-6 text-success d-flex align-items-center gap-2">
+                <i class="bi bi-currency-dollar"></i> {{ application.salary_range|default:"Not specified" }}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="glass-card p-3">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Follow-up Date</div>
+            <div class="fw-bold fs-6 text-warning d-flex align-items-center gap-2">
+                <i class="bi bi-bell"></i> {{ application.follow_up_date|date:"M d, Y"|default:"None scheduled" }}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="glass-card p-3">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Resume Used</div>
+            <div class="fw-bold fs-6 text-light text-truncate d-flex align-items-center gap-2">
+                <i class="bi bi-file-earmark-person text-info"></i> {{ application.resume_version|default:"Default Resume" }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Details, Description, Recruiter -->
+    <div class="col-lg-7">
+        <!-- Recruiter Contact Card -->
+        {% if application.recruiter_name or application.recruiter_email or application.recruiter_linkedin %}
+            <div class="glass-card p-4 mb-4">
+                <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-person-badge text-primary"></i> Recruiter & Contact Information
+                </h5>
+                <div class="d-flex flex-wrap gap-3 align-items-center">
+                    {% if application.recruiter_name %}
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-fill text-muted"></i>
+                            <span class="fw-medium text-light">{{ application.recruiter_name }}</span>
+                        </div>
+                    {% endif %}
+                    {% if application.recruiter_email %}
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-envelope-fill text-muted"></i>
+                            <a href="mailto:{{ application.recruiter_email }}" class="text-decoration-none">
+                                {{ application.recruiter_email }}
+                            </a>
+                        </div>
+                    {% endif %}
+                    {% if application.recruiter_linkedin %}
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-linkedin text-info"></i>
+                            <a href="{{ application.recruiter_linkedin }}" target="_blank" rel="noopener" class="text-decoration-none">
+                                LinkedIn Profile
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Job Description -->
+        <div class="glass-card p-4 mb-4">
+            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-file-text text-primary"></i> Job Description & Requirements
+            </h5>
+            {% if application.job_description %}
+                <div class="text-secondary" style="white-space: pre-line; line-height: 1.6;">
+                    {{ application.job_description }}
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">No job description saved yet. You can paste requirements by editing the application.</p>
+            {% endif %}
+        </div>
+
+        <!-- Notes -->
+        <div class="glass-card p-4 mb-4">
+            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-journal-check text-warning"></i> Interview Prep & Personal Notes
+            </h5>
+            {% if application.notes %}
+                <div class="text-secondary" style="white-space: pre-line; line-height: 1.6;">
+                    {{ application.notes }}
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">No notes recorded. Use this space for behavioral story reminders, interview question prep, or referrals.</p>
+            {% endif %}
+        </div>
+
+        <!-- Tags -->
+        {% if application.tag_list %}
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-tags text-primary"></i> Required Skills & Tags
+                </h5>
+                <div>
+                    {% for tag in application.tag_list %}
+                        <span class="tag-badge px-3 py-1 fs-6">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Right Column: Timeline / History -->
+    <div class="col-lg-5">
+        <div class="glass-card p-4">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-bezier2 text-primary"></i> Stage Timeline
+                </h5>
+                <button type="button" class="btn btn-outline-glass btn-sm" data-bs-toggle="modal" data-bs-target="#addTimelineModal">
+                    <i class="bi bi-plus-lg"></i> Add Milestone
+                </button>
+            </div>
+
+            <!-- Timeline stem -->
+            {% if timeline_events %}
+                <div class="timeline-stem">
+                    {% for event in timeline_events %}
+                        <div class="timeline-event-item">
+                            <div class="timeline-dot"></div>
+                            <div class="fw-bold text-light mb-1">{{ event.stage_title }}</div>
+                            <div class="text-muted small mb-2 d-flex align-items-center gap-2">
+                                <i class="bi bi-calendar-event"></i> {{ event.event_date|date:"F d, Y" }}
+                            </div>
+                            {% if event.notes %}
+                                <div class="p-2 rounded small text-secondary" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color);">
+                                    {{ event.notes }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted small">
+                    <i class="bi bi-clock-history fs-3 d-block mb-2 opacity-50"></i>
+                    No timeline stages logged yet.<br>Click "Add Milestone" to record interview rounds or assessments.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Timeline Event Modal -->
+<div class="modal fade" id="addTimelineModal" tabindex="-1" aria-labelledby="addTimelineModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addTimelineModalLabel">Add Timeline Milestone</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'tracker:add_timeline_event' pk=application.pk %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label" for="id_stage_title">Stage Title <span class="text-danger">*</span></label>
+                        {{ timeline_form.stage_title }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="id_event_date">Event Date <span class="text-danger">*</span></label>
+                        {{ timeline_form.event_date }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="id_notes_timeline">Milestone Notes & Takeaways</label>
+                        {{ timeline_form.notes }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-glass" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-gradient">Add Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Analytics & Insights • Job Application Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-pie-chart-fill text-primary"></i> Application Analytics & Insights
+        </h2>
+        <p class="text-muted small mb-0">Quantitative analysis of your job search funnel, response velocity, and pipeline health.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'tracker:export_csv' %}" class="btn btn-outline-glass btn-sm">
+            <i class="bi bi-download"></i> Download CSV Report
+        </a>
+    </div>
+</div>
+
+<!-- Conversion Funnel Metrics -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Total Opportunities</div>
+            <div class="stat-val mt-1">{{ stats.total_count }}</div>
+            <div class="text-muted small mt-1">Applications logged</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Response Rate</div>
+            <div class="stat-val mt-1 text-info">{{ stats.response_rate }}%</div>
+            <div class="text-muted small mt-1">From submitted applications</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Interview Pipeline</div>
+            <div class="stat-val mt-1 text-primary">{{ stats.interviewing_count }}</div>
+            <div class="text-muted small mt-1">Active candidate rounds</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Offers Received</div>
+            <div class="stat-val mt-1 text-success">{{ stats.offered_count }}</div>
+            <div class="text-muted small mt-1">Final decision stage</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Grid -->
+<div class="row g-4 mb-4">
+    <!-- Status Breakdown -->
+    <div class="col-12 col-lg-6">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-pie-chart text-primary"></i> Status Distribution
+            </h5>
+            <div style="position: relative; height: 280px;">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workplace Type -->
+    <div class="col-12 col-lg-6">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-building text-info"></i> Remote vs Hybrid vs On-Site
+            </h5>
+            <div style="position: relative; height: 280px;">
+                <canvas id="workTypeChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Priority Breakdown -->
+    <div class="col-12 col-lg-6">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-bar-chart-fill text-warning"></i> Application Volume by Priority
+            </h5>
+            <div style="position: relative; height: 260px;">
+                <canvas id="priorityChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skills & Tech Frequency -->
+    <div class="col-12 col-lg-6">
+        <div class="glass-card p-4 h-100">
+            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-code-slash text-success"></i> Most Targeted Skills & Stack
+            </h5>
+            {% if top_tags %}
+                <p class="text-muted small">Skills most frequently required across your applications:</p>
+                <div class="d-flex flex-wrap gap-2 pt-2">
+                    {% for tag, count in top_tags %}
+                        <div class="d-flex align-items-center gap-2 px-3 py-2 rounded" style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-color);">
+                            <span class="fw-semibold text-light">{{ tag }}</span>
+                            <span class="badge bg-primary rounded-pill small">{{ count }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted small">
+                    <i class="bi bi-tags fs-3 d-block mb-1 opacity-50"></i>
+                    No skill tags recorded yet. Add tags like "Python, React, Django" when tracking jobs.
+                </div>
+            {% endif %}
+
+            <!-- Funnel Health Advice -->
+            <div class="mt-4 p-3 rounded" style="background: rgba(99, 102, 241, 0.08); border-left: 3px solid var(--accent-primary);">
+                <div class="fw-bold small text-primary mb-1">
+                    <i class="bi bi-lightbulb-fill me-1"></i> Job Search Funnel Recommendation
+                </div>
+                <div class="text-secondary small">
+                    {% if stats.total_count < 5 %}
+                        Aim to submit 10-15 targeted applications to build steady interview pipeline momentum.
+                    {% elif stats.response_rate > 20 %}
+                        Your response rate ({{ stats.response_rate }}%) is above industry benchmarks! Continue prioritizing tailored resumes and referrals.
+                    {% else %}
+                        Consider refining your resume keywords or reaching out directly to hiring managers on LinkedIn.
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const statusData = JSON.parse('{{ status_counts_json|escapejs }}');
+    const workTypeData = JSON.parse('{{ work_type_counts_json|escapejs }}');
+    const priorityData = JSON.parse('{{ priority_counts_json|escapejs }}');
+
+    // Chart default styles
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+
+    // Status Doughnut Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(statusData),
+            datasets: [{
+                data: Object.values(statusData),
+                backgroundColor: [
+                    '#f59e0b', // Wishlist
+                    '#38bdf8', // Applied
+                    '#a855f7', // Interviewing
+                    '#10b981', // Offered
+                    '#f43f5e', // Rejected
+                    '#06b6d4', // Accepted
+                    '#94a3b8'  // Withdrawn
+                ],
+                borderWidth: 2,
+                borderColor: '#141e33',
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 12, padding: 15 }
+                }
+            },
+            cutout: '68%'
+        }
+    });
+
+    // Workplace Type Bar Chart
+    const workCtx = document.getElementById('workTypeChart').getContext('2d');
+    new Chart(workCtx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(workTypeData),
+            datasets: [{
+                label: 'Applications',
+                data: Object.values(workTypeData),
+                backgroundColor: ['#6366f1', '#06b6d4', '#8b5cf6'],
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // Priority Chart
+    const priorityCtx = document.getElementById('priorityChart').getContext('2d');
+    new Chart(priorityCtx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(priorityData),
+            datasets: [{
+                label: 'Priority',
+                data: Object.values(priorityData),
+                backgroundColor: ['#ef4444', '#f59e0b', '#64748b'],
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                },
+                y: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

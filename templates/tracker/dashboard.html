@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard • Job Application Tracker{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="row g-3 mb-4">
+    <!-- Total Applications -->
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stat-val">{{ stats.total_count }}</div>
+                    <div class="stat-label">Total Applied</div>
+                </div>
+                <div class="stat-icon-wrapper" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+                    <i class="bi bi-briefcase-fill"></i>
+                </div>
+            </div>
+            <div class="mt-2 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between text-muted small">
+                <span>{{ stats.applied_count }} pending</span>
+                <span>{{ stats.wishlist_count }} saved</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Interviews -->
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stat-val d-flex align-items-center gap-2">
+                        {{ stats.interviewing_count }}
+                        {% if stats.interviewing_count > 0 %}
+                            <span class="pulse-dot text-info"></span>
+                        {% endif %}
+                    </div>
+                    <div class="stat-label">Interviewing</div>
+                </div>
+                <div class="stat-icon-wrapper" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;">
+                    <i class="bi bi-camera-video-fill"></i>
+                </div>
+            </div>
+            <div class="mt-2 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between text-muted small">
+                <span>Active discussions</span>
+                <span class="text-info fw-semibold">Live Stage</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offers Received -->
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stat-val text-success">{{ stats.offered_count }}</div>
+                    <div class="stat-label">Offers Received</div>
+                </div>
+                <div class="stat-icon-wrapper" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                    <i class="bi bi-trophy-fill"></i>
+                </div>
+            </div>
+            <div class="mt-2 pt-2 border-top border-secondary border-opacity-10 d-flex justify-content-between text-muted small">
+                <span>{{ stats.accepted_count }} accepted</span>
+                <span class="text-success fw-semibold">Celebration</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Response Rate -->
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stat-val">{{ stats.response_rate }}<span style="font-size: 1.2rem;">%</span></div>
+                    <div class="stat-label">Response Rate</div>
+                </div>
+                <div class="stat-icon-wrapper" style="background: rgba(6, 182, 212, 0.15); color: #22d3ee;">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+            </div>
+            <div class="mt-2 pt-2 border-top border-secondary border-opacity-10">
+                <div class="progress" style="height: 6px; background: rgba(255, 255, 255, 0.08);">
+                    <div class="progress-bar" role="progressbar" style="width: {{ stats.response_rate }}%; background: var(--accent-gradient);" aria-valuenow="{{ stats.response_rate }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter and Search Bar -->
+<div class="filter-bar shadow-sm">
+    <form method="get" action="{% url 'tracker:dashboard' %}" class="row g-2 align-items-center">
+        <!-- Search Input -->
+        <div class="col-12 col-md-4">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-end-0 text-muted" style="border-color: var(--border-color);">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Search company, role, tags... (Ctrl+K)" value="{{ query }}">
+            </div>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="col-6 col-sm-4 col-md-2">
+            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Statuses</option>
+                {% for code, label in status_choices %}
+                    <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Work Type Filter -->
+        <div class="col-6 col-sm-4 col-md-2">
+            <select name="work_type" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Workplaces</option>
+                {% for code, label in work_type_choices %}
+                    <option value="{{ code }}" {% if work_type_filter == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Priority Filter -->
+        <div class="col-6 col-sm-4 col-md-2">
+            <select name="priority" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Priorities</option>
+                {% for code, label in priority_choices %}
+                    <option value="{{ code }}" {% if priority_filter == code %}selected{% endif %}>{{ label }} Priority</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Sort and View Switcher -->
+        <div class="col-6 col-sm-12 col-md-2 d-flex justify-content-end align-items-center gap-2">
+            <div class="btn-group" role="group" aria-label="View toggle">
+                <button type="button" class="btn btn-outline-glass btn-sm active" id="viewTableBtn" title="Table View">
+                    <i class="bi bi-table"></i>
+                </button>
+                <button type="button" class="btn btn-outline-glass btn-sm" id="viewGridBtn" title="Card Grid View">
+                    <i class="bi bi-grid-fill"></i>
+                </button>
+            </div>
+            {% if query or status_filter or work_type_filter or priority_filter %}
+                <a href="{% url 'tracker:dashboard' %}" class="btn btn-sm btn-outline-glass text-danger" title="Clear filters">
+                    <i class="bi bi-x-circle"></i>
+                </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Applications Listing -->
+{% if applications %}
+    <!-- Table View -->
+    <div id="tableViewContainer" class="glass-card overflow-hidden">
+        <div class="table-responsive">
+            <table class="table custom-table">
+                <thead>
+                    <tr>
+                        <th>Company & Role</th>
+                        <th>Status</th>
+                        <th>Work Type</th>
+                        <th>Priority</th>
+                        <th>Applied Date</th>
+                        <th>Salary / Tags</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in applications %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="company-logo-avatar">
+                                        {{ app.company_name|slice:":1"|upper }}
+                                    </div>
+                                    <div>
+                                        <a href="{% url 'tracker:application_detail' pk=app.pk %}" class="fw-bold fs-6 text-white text-decoration-none">
+                                            {{ app.job_title }}
+                                        </a>
+                                        <div class="d-flex align-items-center gap-2 mt-1 small text-muted">
+                                            <span class="text-light fw-medium">{{ app.company_name }}</span>
+                                            <span>•</span>
+                                            <span><i class="bi bi-geo-alt"></i> {{ app.location|default:"Remote" }}</span>
+                                            {% if app.job_url %}
+                                                <a href="{{ app.job_url }}" target="_blank" rel="noopener" class="text-primary" title="View Job Post">
+                                                    <i class="bi bi-box-arrow-up-right"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <!-- Quick Status Selector -->
+                                <select class="form-select form-select-sm table-status-select badge-status {{ app.status_badge_class }}" data-id="{{ app.pk }}" style="cursor: pointer; width: auto; font-weight: 600;">
+                                    {% for code, label in status_choices %}
+                                        <option value="{{ code }}" {% if app.status == code %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <span class="badge bg-dark border border-secondary text-light small px-2 py-1">
+                                    {{ app.get_work_location_type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="priority-indicator {{ app.priority_badge_class }}">
+                                    {{ app.get_priority_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="small fw-medium">{{ app.application_date|date:"M d, Y" }}</div>
+                                <div class="text-muted" style="font-size: 0.72rem;">{{ app.days_since_applied }} days ago</div>
+                            </td>
+                            <td>
+                                {% if app.salary_range %}
+                                    <div class="small fw-semibold text-success mb-1">
+                                        <i class="bi bi-cash-stack"></i> {{ app.salary_range }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    {% for tag in app.tag_list|slice:":3" %}
+                                        <span class="tag-badge">{{ tag }}</span>
+                                    {% endfor %}
+                                    {% if app.tag_list|length > 3 %}
+                                        <span class="text-muted small">+{{ app.tag_list|length|add:"-3" }}</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex align-items-center justify-content-end gap-1">
+                                    <a href="{% url 'tracker:application_detail' pk=app.pk %}" class="btn-action-sm" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'tracker:application_update' pk=app.pk %}" class="btn-action-sm" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'tracker:application_delete' pk=app.pk %}" class="btn-action-sm text-danger" title="Delete">
+                                        <i class="bi bi-trash3"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Grid View (Hidden by default or toggled via JS) -->
+    <div id="gridViewContainer" class="row g-3 d-none">
+        {% for app in applications %}
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="glass-card card-interactive p-4 h-100 d-flex flex-column justify-content-between position-relative">
+                    <div>
+                        <!-- Header -->
+                        <div class="d-flex align-items-start justify-content-between mb-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="company-logo-avatar">
+                                    {{ app.company_name|slice:":1"|upper }}
+                                </div>
+                                <div>
+                                    <h5 class="mb-0 fw-bold fs-6">
+                                        <a href="{% url 'tracker:application_detail' pk=app.pk %}" class="text-white text-decoration-none">
+                                            {{ app.job_title }}
+                                        </a>
+                                    </h5>
+                                    <div class="text-muted small">{{ app.company_name }}</div>
+                                </div>
+                            </div>
+                            <span class="badge-status {{ app.status_badge_class }}">
+                                <i class="bi {{ app.status_icon }}"></i> {{ app.get_status_display }}
+                            </span>
+                        </div>
+
+                        <!-- Info Pills -->
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <span class="badge bg-dark border border-secondary text-secondary">
+                                <i class="bi bi-building"></i> {{ app.get_work_location_type_display }}
+                            </span>
+                            <span class="priority-indicator {{ app.priority_badge_class }}">
+                                {{ app.get_priority_display }} Priority
+                            </span>
+                            {% if app.salary_range %}
+                                <span class="badge bg-dark border border-success text-success">
+                                    <i class="bi bi-currency-dollar"></i> {{ app.salary_range }}
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Location & Date -->
+                        <div class="text-secondary small mb-3">
+                            <div><i class="bi bi-geo-alt me-1"></i> {{ app.location|default:"Remote" }}</div>
+                            <div><i class="bi bi-calendar3 me-1"></i> Applied {{ app.application_date|date:"M d, Y" }} ({{ app.days_since_applied }}d ago)</div>
+                        </div>
+
+                        <!-- Tags -->
+                        {% if app.tag_list %}
+                            <div class="mb-3">
+                                {% for tag in app.tag_list|slice:":4" %}
+                                    <span class="tag-badge">{{ tag }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Footer actions -->
+                    <div class="pt-3 border-top border-secondary border-opacity-10 d-flex align-items-center justify-content-between">
+                        <a href="{% url 'tracker:application_detail' pk=app.pk %}" class="btn btn-outline-glass btn-sm">
+                            <i class="bi bi-card-text"></i> Details
+                        </a>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'tracker:application_update' pk=app.pk %}" class="btn-action-sm" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'tracker:application_delete' pk=app.pk %}" class="btn-action-sm text-danger" title="Delete">
+                                <i class="bi bi-trash3"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+{% else %}
+    <!-- Empty State -->
+    <div class="glass-card text-center py-5 px-4 my-4">
+        <div class="mx-auto mb-3 stat-icon-wrapper" style="width: 64px; height: 64px; font-size: 2rem; background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+            <i class="bi bi-search"></i>
+        </div>
+        <h4 class="fw-bold mb-2">No Job Applications Found</h4>
+        <p class="text-muted mx-auto mb-4" style="max-width: 480px;">
+            {% if query or status_filter %}
+                No application matches your current search or filter criteria. Try clearing filters.
+            {% else %}
+                Start tracking your career journey! Add your target companies or load realistic demo data to explore the tracker.
+            {% endif %}
+        </p>
+        <div class="d-flex justify-content-center gap-2 flex-wrap">
+            {% if query or status_filter %}
+                <a href="{% url 'tracker:dashboard' %}" class="btn btn-outline-glass">Clear Filters</a>
+            {% else %}
+                <button type="button" class="btn btn-primary-gradient" data-bs-toggle="modal" data-bs-target="#quickAddModal">
+                    <i class="bi bi-plus-lg"></i> Track First Job
+                </button>
+                <a href="{% url 'tracker:seed_demo' %}" class="btn btn-outline-glass">
+                    <i class="bi bi-magic text-warning"></i> Load Demo Data
+                </a>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} • Job Application Tracker{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-10 col-xl-9">
+        <div class="mb-3">
+            <a href="{% if application %}{% url 'tracker:application_detail' pk=application.pk %}{% else %}{% url 'tracker:dashboard' %}{% endif %}" class="btn btn-outline-glass btn-sm">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+
+        <div class="glass-card p-4 p-md-5 mb-5">
+            <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom border-secondary border-opacity-10">
+                <div class="brand-icon" style="width: 44px; height: 44px; font-size: 1.3rem;">
+                    <i class="bi bi-pencil-square"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-1">{{ title }}</h3>
+                    <p class="text-muted small mb-0">Record all vital details about this opportunity to stay organized throughout your search.</p>
+                </div>
+            </div>
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.errors %}
+                    <div class="alert alert-danger alert-custom mb-4">
+                        <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i> Please correct the errors below:</div>
+                        <ul class="mb-0 small ps-3">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <!-- Section 1: Role & Company -->
+                <h5 class="fw-bold text-primary mb-3">1. Role & Opportunity</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label" for="{{ form.company_name.id_for_label }}">Company Name <span class="text-danger">*</span></label>
+                        {{ form.company_name }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="{{ form.job_title.id_for_label }}">Job Title / Position <span class="text-danger">*</span></label>
+                        {{ form.job_title }}
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label" for="{{ form.job_url.id_for_label }}">Job Listing URL</label>
+                        {{ form.job_url }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="{{ form.employment_type.id_for_label }}">Employment Type</label>
+                        {{ form.employment_type }}
+                    </div>
+                </div>
+
+                <!-- Section 2: Pipeline & Status -->
+                <h5 class="fw-bold text-primary mb-3">2. Status & Placement</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label" for="{{ form.status.id_for_label }}">Application Status</label>
+                        {{ form.status }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="{{ form.priority.id_for_label }}">Priority Level</label>
+                        {{ form.priority }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="{{ form.work_location_type.id_for_label }}">Workplace Type</label>
+                        {{ form.work_location_type }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="{{ form.location.id_for_label }}">Location / City</label>
+                        {{ form.location }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="{{ form.salary_range.id_for_label }}">Target Salary / Compensation</label>
+                        {{ form.salary_range }}
+                    </div>
+                </div>
+
+                <!-- Section 3: Dates & Timeline -->
+                <h5 class="fw-bold text-primary mb-3">3. Key Dates</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label" for="{{ form.application_date.id_for_label }}">Date Applied</label>
+                        {{ form.application_date }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="{{ form.deadline_date.id_for_label }}">Deadline (if any)</label>
+                        {{ form.deadline_date }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="{{ form.follow_up_date.id_for_label }}">Follow-up Reminder Date</label>
+                        {{ form.follow_up_date }}
+                    </div>
+                </div>
+
+                <!-- Section 4: Recruiter & Contacts -->
+                <h5 class="fw-bold text-primary mb-3">4. Contact & Recruiter Information</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label" for="{{ form.recruiter_name.id_for_label }}">Recruiter / Referrer Name</label>
+                        {{ form.recruiter_name }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="{{ form.recruiter_email.id_for_label }}">Recruiter Email</label>
+                        {{ form.recruiter_email }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="{{ form.recruiter_linkedin.id_for_label }}">LinkedIn / Profile URL</label>
+                        {{ form.recruiter_linkedin }}
+                    </div>
+                </div>
+
+                <!-- Section 5: Documents & Notes -->
+                <h5 class="fw-bold text-primary mb-3">5. Additional Details & Notes</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label" for="{{ form.tags.id_for_label }}">Tags / Tech Stack (comma separated)</label>
+                        {{ form.tags }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="{{ form.resume_version.id_for_label }}">Resume / Document Version Used</label>
+                        {{ form.resume_version }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="{{ form.job_description.id_for_label }}">Job Description / Requirements</label>
+                        {{ form.job_description }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="{{ form.notes.id_for_label }}">Personal Preparation Notes</label>
+                        {{ form.notes }}
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex align-items-center justify-content-end gap-2 pt-3 border-top border-secondary border-opacity-10">
+                    <a href="{% if application %}{% url 'tracker:application_detail' pk=application.pk %}{% else %}{% url 'tracker:dashboard' %}{% endif %}" class="btn btn-outline-glass">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary-gradient px-4">
+                        <i class="bi bi-check2-circle"></i> {{ button_text }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
