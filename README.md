@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CareerPulse — Aesthetic Job Application Tracker
 
 An aesthetic, full-stack **Job Application Tracker** built with **Python 3.14**, **Django 6.1**, **SQL (SQLite)**, **HTML5**, **Vanilla CSS & Design System**, and **Bootstrap 5**.
@@ -141,3 +142,6 @@ When discussing this project in technical interviews, you can highlight:
 2. **Dynamic Client-Server Interaction**: How AJAX status updates enable instant Kanban moves and table dropdown updates with JSON responses and optimistic UI updates without full page reloads.
 3. **Responsive UI/UX**: Crafting a custom aesthetic design system with CSS custom properties (variables), glassmorphic styling, and accessible keyboard shortcuts.
 4. **Data Portability**: Implementing a dynamic CSV streaming response with Django `HttpResponse` and Python's `csv` module.
+=======
+# job_application_tracker-
+>>>>>>> origin/main
